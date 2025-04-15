@@ -1,24 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avaliação jogo 2D Orientado a Objetos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Space Invaders</title>
   <style>
     body {
+      margin: 0;
+      background-color: #111;
+      color: white;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
     }
 
     canvas {
-      margin-top: 100px;
-      background-color: gray;
+      border: 2px solid white;
+      background-color: black;
+    }
+
+    #reiniciarBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #222;
+      color: white;
+      border: 1px solid white;
+      border-radius: 5px;
+    }
+
+    #reiniciarBtn:hover {
+      background-color: #333;
     }
   </style>
 </head>
 <body>
-  <canvas id="JogoCanvas" width="800" height="400"></canvas>
-  <script src="./pqp.js"></script>
+  <canvas id="JogoCanvas" width="800" height="600"></canvas>
+  <button id="reiniciarBtn">Reiniciar</button>
+
+  <!-- Seu script JS pode estar aqui ou em um arquivo externo -->
+  <script src="./pqp.js"></script> <!-- Se estiver em um arquivo externo -->
 </body>
 </html>

@@ -1,200 +1,208 @@
-// Obtendo o contexto do canvas
 const canvas = document.getElementById('JogoCanvas');
 const ctx = canvas.getContext('2d');
 
-// Classe base para entidades que vão ser desenhadas no jogo
 class Entidade {
     constructor(x, y, largura, altura, cor) {
-        this.x = x;
-        this.y = y;
-        this.largura = largura;
-        this.altura = altura;
-        this.cor = cor;
+        this._x = x;
+        this._y = y;
+        this._largura = largura;
+        this._altura = altura;
+        this._cor = cor;
+    }
+
+    get x() {
+        return this._x;
+    }
+
+    set x(value) {
+        this._x = value;
+    }
+
+    get y() {
+        return this._y;
+    }
+
+    set y(value) {
+        this._y = value;
+    }
+
+    get largura() {
+        return this._largura;
+    }
+
+    get altura() {
+        return this._altura;
     }
 
     desenhar() {
-        ctx.fillStyle = this.cor;
-        ctx.fillRect(this.x, this.y, this.largura, this.altura);
+        ctx.fillStyle = this._cor;
+        ctx.fillRect(this._x, this._y, this._largura, this._altura);
     }
 
-    // Método para checar colisão com outra entidade
-    colisao(outro) {
-        return this.x < outro.x + outro.largura &&
-               this.x + this.largura > outro.x &&
-               this.y < outro.y + outro.altura &&
-               this.y + this.altura > outro.y;
-    }
+    atualizar() {}
 }
 
-// Classe Jogador
-class Jogador extends Entidade {
-    constructor(x, y, largura, altura, cor) {
-        super(x, y, largura, altura, cor);
+class Nave extends Entidade {
+    constructor(x, y, cor) {
+        super(x, y, 50, 20, cor);
         this.velocidade = 5;
     }
 
-    mover(esquerda, direita) {
-        if (esquerda && this.x > 0) {
-            this.x -= this.velocidade;
-        }
-        if (direita && this.x + this.largura < canvas.width) {
-            this.x += this.velocidade;
-        }
+    mover(direcao) {
+        if (direcao === 'esquerda' && this._x > 0) this._x -= this.velocidade;
+        if (direcao === 'direita' && this._x + this._largura < canvas.width) this._x += this.velocidade;
     }
+
+    atualizar() {}
 }
 
-// Classe Projetil
-class Projetil extends Entidade {
+class Tiro extends Entidade {
     constructor(x, y) {
-        super(x, y, 5, 20, 'red');
-        this.velocidade = 5;
+        super(x, y, 5, 10, 'yellow');
+        this.velocidade = -7;
     }
 
     atualizar() {
-        this.y -= this.velocidade; // Move o projétil para cima
+        this._y += this.velocidade;
     }
 }
 
-// Classe Inimigo
-class Inimigo extends Entidade {
-    constructor(x, y, largura, altura, cor) {
-        super(x, y, largura, altura, cor);
-        this.velocidade = 2;
+class Invasor extends Entidade {
+    constructor(x, y) {
+        super(x, y, 40, 20, 'red');
+        this.direcao = 1;
+        this.velocidadeGravidade = 0.05;
+        this.velocidadeHorizontal = 0.75;
     }
 
-    mover() {
-        this.y += this.velocidade; // Movimento do inimigo para baixo
+    atualizar() {
+        this._x += this.direcao * this.velocidadeHorizontal;
+        this._y += this.velocidadeGravidade;
     }
-}
 
-// Criando o jogador
-const jogador = new Jogador(canvas.width / 2 - 25, canvas.height - 50, 50, 30, 'green');
-
-// Array para armazenar os projéteis
-let projeteis = [];
-
-// Array para armazenar os inimigos
-let inimigos = [];
-
-// Gerenciar entrada do teclado
-function gerenciarEntradaTeclado() {
-    let esquerda = false;
-    let direita = false;
-
-    // Eventos de pressionamento das teclas
-    window.addEventListener('keydown', (evento) => {
-        if (evento.key === 'ArrowLeft') {
-            esquerda = true;
-        }
-        if (evento.key === 'ArrowRight') {
-            direita = true;
-        }
-        if (evento.key === ' ') { // Dispara um projétil quando a tecla de espaço é pressionada
-            dispararProjetil();
-        }
-    });
-
-    // Eventos de soltura das teclas
-    window.addEventListener('keyup', (evento) => {
-        if (evento.key === 'ArrowLeft') {
-            esquerda = false;
-        }
-        if (evento.key === 'ArrowRight') {
-            direita = false;
-        }
-    });
-
-    jogador.mover(esquerda, direita);
-}
-
-// Função para disparar projétil
-function dispararProjetil() {
-    let projétil = new Projetil(jogador.x + jogador.largura / 2 - 2, jogador.y);
-    projeteis.push(projétil);
-}
-
-// Função para criar inimigos
-function criarInimigos() {
-    for (let i = 0; i < 5; i++) {
-        let inimigo = new Inimigo(100 + i * 60, 50, 40, 40, 'red');
-        inimigos.push(inimigo);
+    inverterDirecao() {
+        this.direcao = -this.direcao;
     }
 }
 
-// Função para verificar colisão com o chão ou com os inimigos
-function verificarColisao() {
-    // Verificar colisão com o chão
-    if (jogador.y + jogador.altura >= canvas.height) {
-        gameOver();
+class Jogo {
+    constructor() {
+        this.iniciar();
     }
 
-    // Verificar colisão com os inimigos
-    for (let i = 0; i < inimigos.length; i++) {
-        if (jogador.colisao(inimigos[i])) {
-            gameOver();
-        }
+    iniciar() {
+        this.nave = new Nave(canvas.width / 2 - 25, canvas.height - 30, 'blue');
+        this.tiros = [];
+        this.invasores = [];
+        this.linhas = 3;
+        this.colunas = 8;
+        this.pontuacao = 0;
+        this.gameOver = false;
+        this.criarInvasores();
+        this.loop();
     }
 
-    // Verificar se algum inimigo chegou ao chão
-    for (let i = 0; i < inimigos.length; i++) {
-        if (inimigos[i].y + inimigos[i].altura >= canvas.height) {
-            gameOver();
-        }
-    }
-}
-
-// Função que mostra o game over
-function gameOver() {
-    alert("Game Over!");
-    // Limpar os inimigos e projéteis
-    inimigos = [];
-    projeteis = [];
-    // Parar o loop de animação
-    cancelAnimationFrame(animationId);
-}
-
-// Função do loop do jogo
-let animationId;
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Gerencia a entrada do teclado
-    gerenciarEntradaTeclado();
-
-    // Atualiza e desenha o jogador
-    jogador.desenhar();
-
-    // Atualiza e desenha os projéteis
-    for (let i = 0; i < projeteis.length; i++) {
-        projeteis[i].atualizar();
-        projeteis[i].desenhar();
-        
-        // Verifica colisão com os inimigos
-        for (let j = 0; j < inimigos.length; j++) {
-            if (projeteis[i].colisao(inimigos[j])) {
-                // Se houve colisão, remover o inimigo e o projétil
-                inimigos.splice(j, 1);
-                projeteis.splice(i, 1);
-                break; // Para evitar conflitos ao remover dentro do loop
+    criarInvasores() {
+        for (let l = 0; l < this.linhas; l++) {
+            for (let c = 0; c < this.colunas; c++) {
+                this.invasores.push(new Invasor(80 * c + 30, 40 * l + 30));
             }
         }
     }
 
-    // Atualiza e desenha os inimigos
-    for (let i = 0; i < inimigos.length; i++) {
-        inimigos[i].mover();
-        inimigos[i].desenhar();
+    colisao(a, b) {
+        return a.x < b.x + b.largura &&
+               a.x + a.largura > b.x &&
+               a.y < b.y + b.altura &&
+               a.y + a.altura > b.y;
     }
 
-    // Verifica colisões
-    verificarColisao();
+    desenharPontuacao() {
+        ctx.fillStyle = 'white';
+        ctx.font = '20px Arial';
+        ctx.fillText('Pontuação: ' + this.pontuacao, 10, 30);
+    }
 
-    // Chama o loop de novo
-    animationId = requestAnimationFrame(loop);
+    desenharGameOver() {
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.fillText('GAME OVER', canvas.width / 2 - 90, canvas.height / 2);
+    }
+
+    atualizar() {
+        if (this.gameOver) {
+            this.desenharGameOver();
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.nave.desenhar();
+
+        for (let i = this.tiros.length - 1; i >= 0; i--) {
+            const tiro = this.tiros[i];
+            tiro.atualizar();
+            tiro.desenhar();
+
+            if (tiro.y < 0) this.tiros.splice(i, 1);
+        }
+
+        let atingiuBorda = false;
+
+        for (let i = this.invasores.length - 1; i >= 0; i--) {
+            const inv = this.invasores[i];
+            inv.atualizar();
+            inv.desenhar();
+
+            if (inv.x <= 0 || inv.x + inv.largura >= canvas.width) {
+                atingiuBorda = true;
+            }
+
+            if (this.colisao(this.nave, inv)) {
+                this.gameOver = true;
+                return;
+            }
+
+            for (let j = this.tiros.length - 1; j >= 0; j--) {
+                if (this.colisao(inv, this.tiros[j])) {
+                    this.invasores.splice(i, 1);
+                    this.tiros.splice(j, 1);
+                    this.pontuacao += 10;
+                    break;
+                }
+            }
+        }
+
+        if (atingiuBorda) {
+            for (const inv of this.invasores) {
+                inv.inverterDirecao();
+            }
+        }
+
+        for (const inv of this.invasores) {
+            if (inv.y + inv.altura >= canvas.height) {
+                this.gameOver = true;
+                return;
+            }
+        }
+
+        this.desenharPontuacao();
+    }
+
+    loop() {
+        this.atualizar();
+        requestAnimationFrame(this.loop.bind(this));
+    }
 }
 
-// Cria inimigos no início
-criarInimigos();
+const jogo = new Jogo();
 
-// Inicia o jogo
-loop();
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' && !jogo.gameOver) jogo.nave.mover('esquerda');
+    if (e.code === 'ArrowRight' && !jogo.gameOver) jogo.nave.mover('direita');
+    if (e.code === 'Space' && !jogo.gameOver) jogo.tiros.push(new Tiro(jogo.nave.x + jogo.nave.largura / 2 - 2.5, jogo.nave.y));
+});
+
+
+document.getElementById('reiniciarBtn').addEventListener('click', () => {
+    jogo.iniciar(); 
+});
